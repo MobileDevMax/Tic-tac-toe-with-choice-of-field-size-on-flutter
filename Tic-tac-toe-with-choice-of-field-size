@@ -1,0 +1,152 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(TicTacToeApp());
+}
+
+class TicTacToeApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Tic tac toe with choice of field size',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: SizeSelectorScreen(),
+    );
+  }
+}
+
+class SizeSelectorScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Select field size')),
+      body: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+        ),
+        itemCount: 9, 
+        itemBuilder: (context, index) {
+          int size = index + 4; 
+          return Card(
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GameScreen(size: size),
+                  ),
+                );
+              },
+              child: Center(child: Text('$size x $size', style: TextStyle(fontSize: 24))),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class GameScreen extends StatefulWidget {
+  final int size;
+  GameScreen({required this.size});
+
+  @override
+  _GameScreenState createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  late List<List<String?>> board;
+  String currentPlayer = 'X';
+  bool gameEnded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    board = List.generate(widget.size, (_) => List.filled(widget.size, null));
+  }
+
+  void play(int row, int col) {
+    if (board[row][col] == null && !gameEnded) {
+      setState(() {
+        board[row][col] = currentPlayer;
+        if (checkWin(row, col)) {
+          gameEnded = true;
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Player $currentPlayer won!'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      resetGame();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Play again'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
+        }
+      });
+    }
+  }
+
+  bool checkWin(int row, int col) {
+    if (checkLine(board[row]) ||
+        checkLine(board.map((r) => r[col]).toList()) ||
+        (row == col && checkLine(board.asMap().keys.map((i) => board[i][i]).toList())) ||
+        (row + col == widget.size - 1 && checkLine(board.asMap().keys.map((i) => board[i][widget.size - 1 - i]).toList()))) {
+      return true;
+    }
+    return false;
+  }
+
+  bool checkLine(List<String?> line) {
+    return line.every((element) => element == currentPlayer);
+  }
+
+  void resetGame() {
+    board = List.generate(widget.size, (_) => List.filled(widget.size, null));
+    currentPlayer = 'X';
+    gameEnded = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Field size ${widget.size} x ${widget.size}')),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (int i = 0; i < widget.size; i++)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int j = 0; j < widget.size; j++)
+                  GestureDetector(
+                    onTap: () => play(i, j),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black),
+                      ),
+                      child: Center(
+                        child: Text(
+                          board[i][j] ?? '',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
